@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
@@ -14,6 +14,12 @@ export function ProfilePage() {
     const [loading, setLoading] = useState(false)
     const [success, setSuccess] = useState(false)
     const [error, setError] = useState('')
+
+    // Settings panels
+    const [showNotifications, setShowNotifications] = useState(false)
+    const [showHelp, setShowHelp] = useState(false)
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true)
+    const [expandedFaq, setExpandedFaq] = useState(null)
 
     // Form state
     const [nome, setNome] = useState(profile?.nome || '')
@@ -340,24 +346,161 @@ export function ProfilePage() {
                 >
                     <h3 className="font-bold text-gray-800 mb-4">⚙️ Configurações</h3>
                     <div className="space-y-2">
-                        <button className="w-full flex justify-between items-center py-3 px-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                        {/* Notificações */}
+                        <button
+                            onClick={() => setShowNotifications(!showNotifications)}
+                            className="w-full flex justify-between items-center py-3 px-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                        >
                             <span className="text-gray-700">🔔 Notificações</span>
-                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <motion.svg
+                                animate={{ rotate: showNotifications ? 90 : 0 }}
+                                className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                            </motion.svg>
                         </button>
-                        <button className="w-full flex justify-between items-center py-3 px-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                            <span className="text-gray-700">🎨 Aparência</span>
-                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                        <button className="w-full flex justify-between items-center py-3 px-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+
+                        {/* Painel de Notificações */}
+                        <AnimatePresence>
+                            {showNotifications && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="p-4 bg-indigo-50 rounded-xl space-y-4">
+                                        {/* Toggle de notificações */}
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-medium text-gray-700">Receber notificações</p>
+                                                <p className="text-xs text-gray-500">Alertas sobre novas aulas e lembretes</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                                                className={`w-14 h-8 rounded-full transition-colors ${notificationsEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                                            >
+                                                <motion.div
+                                                    animate={{ x: notificationsEnabled ? 24 : 4 }}
+                                                    className="w-6 h-6 bg-white rounded-full shadow"
+                                                />
+                                            </button>
+                                        </div>
+
+                                        {/* Limpar histórico */}
+                                        <div className="pt-2 border-t border-indigo-100">
+                                            <button
+                                                onClick={async () => {
+                                                    if (confirm('Tem certeza que deseja limpar todo o histórico de notificações?')) {
+                                                        try {
+                                                            await supabase
+                                                                .from('user_notifications')
+                                                                .delete()
+                                                                .eq('user_id', user.id)
+                                                            alert('Histórico de notificações limpo!')
+                                                        } catch (err) {
+                                                            console.error('Erro:', err)
+                                                            alert('Erro ao limpar histórico')
+                                                        }
+                                                    }
+                                                }}
+                                                className="w-full py-3 px-4 bg-white text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                                Limpar histórico de notificações
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Ajuda */}
+                        <button
+                            onClick={() => setShowHelp(!showHelp)}
+                            className="w-full flex justify-between items-center py-3 px-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                        >
                             <span className="text-gray-700">❓ Ajuda</span>
-                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <motion.svg
+                                animate={{ rotate: showHelp ? 90 : 0 }}
+                                className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                            </motion.svg>
                         </button>
+
+                        {/* Painel de Ajuda - Q&A */}
+                        <AnimatePresence>
+                            {showHelp && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="p-4 bg-purple-50 rounded-xl space-y-2">
+                                        <p className="text-sm font-medium text-purple-700 mb-3">Perguntas Frequentes</p>
+
+                                        {[
+                                            {
+                                                q: "O que são os Guardiões?",
+                                                a: "Os Guardiões são seus guias de estudo! Cada um representa uma área do conhecimento: Português, Matemática, Ciências Humanas e Ciências da Natureza."
+                                            },
+                                            {
+                                                q: "Como ganho fragmentos?",
+                                                a: "Você ganha fragmentos completando as atividades das micro-aulas. Cada aula concluída com aproveitamento de 70% ou mais te dá 1 fragmento!"
+                                            },
+                                            {
+                                                q: "O que são as micro-aulas?",
+                                                a: "São aulas curtas e objetivas, com conteúdo focado em um único tema. Após estudar, você faz atividades para testar seu conhecimento."
+                                            },
+                                            {
+                                                q: "Como funciona a progressão?",
+                                                a: "Conforme você coleta fragmentos, desbloqueia novos guardiões e conteúdos. Continue estudando para avançar na jornada!"
+                                            },
+                                            {
+                                                q: "Posso refazer as atividades?",
+                                                a: "Sim! Você pode revisar e refazer as atividades quantas vezes quiser, mas fragmentos são ganhos apenas na primeira conclusão."
+                                            },
+                                            {
+                                                q: "Como altero meus dados?",
+                                                a: "Toque no ícone de lápis no canto superior direito da tela de Perfil para editar seu nome, escola, série e foto."
+                                            }
+                                        ].map((faq, index) => (
+                                            <div key={index} className="bg-white rounded-xl overflow-hidden">
+                                                <button
+                                                    onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
+                                                    className="w-full flex justify-between items-center p-4 text-left"
+                                                >
+                                                    <span className="font-medium text-gray-700 text-sm pr-4">{faq.q}</span>
+                                                    <motion.svg
+                                                        animate={{ rotate: expandedFaq === index ? 180 : 0 }}
+                                                        className="w-5 h-5 text-gray-400 shrink-0"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </motion.svg>
+                                                </button>
+                                                <AnimatePresence>
+                                                    {expandedFaq === index && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, height: 0 }}
+                                                            animate={{ opacity: 1, height: 'auto' }}
+                                                            exit={{ opacity: 0, height: 0 }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <p className="px-4 pb-4 text-sm text-gray-500">{faq.a}</p>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </motion.div>
 
